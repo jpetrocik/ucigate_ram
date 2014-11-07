@@ -1,3 +1,9 @@
+3.0 Release
+===============================
+October 29, 2014
+
+* Onboard UNO (SIPPINO)
+
 2.2 Release
 ===============================
 November 22, 2013
