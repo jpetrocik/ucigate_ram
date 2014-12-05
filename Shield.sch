@@ -3212,7 +3212,7 @@ This is the "EZ" version, which has limited top masking for improved ease of ass
 <part name="BT_HDR" library="SparkFun-Connectors" deviceset="M04" device="PTH"/>
 <part name="R1" library="SparkFun-Passives" deviceset="RESISTOR" device="1206" value="1K"/>
 <part name="R2" library="SparkFun-Passives" deviceset="RESISTOR" device="1206" value="2K"/>
-<part name="C6" library="SparkFun-Capacitors" deviceset="CAP" device="PTH1"/>
+<part name="C6" library="SparkFun-Capacitors" deviceset="CAP" device="PTH1" value="1500uf"/>
 <part name="GND2" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="Y1" library="SparkFun-FreqCtrl" deviceset="CRYSTAL" device="HC49US" value="16Mhz"/>
 <part name="C1" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="22pf"/>
