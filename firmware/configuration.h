@@ -1,12 +1,6 @@
 #define BOARD_V3_0_WHITTIER
 
 /**
- * To switch between RAM and MAG gate
- */
-#define RAM_GATE
-//#define MAG_GATE
-
-/**
  * A very long debounce delay, so if the user accidentally
  * presses the button multiple time, it's not interpreted 
  * as multiple presses

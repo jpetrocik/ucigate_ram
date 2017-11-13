@@ -162,23 +162,11 @@ void loop() {
    */
   if (buttonPushed) {
 
-    #ifdef MAG_GATE 
     if (!cadenceStarted) {
       raiseGate();
       delay(8000);
       startCadence();
     }
-    #endif
-
-    #ifdef RAM_GATE 
-    if (cadenceStarted) {
-      cancelCadence();
-    } else if (gatePosition == GATE_POSITION_DOWN ) {
-      raiseGate();
-    } else if (gatePosition == GATE_POSITION_UP ) {
-      startCadence();
-    }
-    #endif
   }
 
 
