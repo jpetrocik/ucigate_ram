@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE eagle SYSTEM "eagle.dtd">
-<eagle version="6.5.0">
+<eagle version="7.2.0">
 <drawing>
 <settings>
 <setting alwaysvectorfont="yes"/>
@@ -3202,7 +3202,6 @@ This is the "EZ" version, which has limited top masking for improved ease of ass
 <part name="PWR" library="SparkFun-Connectors" deviceset="M02" device="3.5MM" value="12V"/>
 <part name="SPKR" library="SparkFun-Connectors" deviceset="M02" device="3.5MM"/>
 <part name="Q8" library="ucigate" deviceset="TIP120" device=""/>
-<part name="R8" library="SparkFun-Passives" deviceset="RESISTOR" device="1206" value="10K"/>
 <part name="STRT" library="SparkFun-Connectors" deviceset="M02" device="3.5MM"/>
 <part name="R10" library="SparkFun-Passives" deviceset="RESISTOR" device="1206" value="10K"/>
 <part name="GND4" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
@@ -3250,7 +3249,6 @@ This is the "EZ" version, which has limited top masking for improved ease of ass
 <instance part="PWR" gate="G$1" x="-109.22" y="111.76" rot="R180"/>
 <instance part="SPKR" gate="G$1" x="30.48" y="38.1" rot="R180"/>
 <instance part="Q8" gate="1" x="-5.08" y="30.48"/>
-<instance part="R8" gate="G$1" x="-15.24" y="114.3" rot="R180"/>
 <instance part="STRT" gate="G$1" x="12.7" y="114.3" rot="R180"/>
 <instance part="R10" gate="G$1" x="-60.96" y="-2.54"/>
 <instance part="GND4" gate="1" x="-48.26" y="-2.54" rot="R90"/>
@@ -3452,10 +3450,7 @@ This is the "EZ" version, which has limited top masking for improved ease of ass
 </net>
 <net name="D7" class="0">
 <segment>
-<pinref part="R8" gate="G$1" pin="1"/>
-<wire x1="-5.08" y1="114.3" x2="-10.16" y2="114.3" width="0.1524" layer="91"/>
 <wire x1="-5.08" y1="114.3" x2="5.08" y2="114.3" width="0.1524" layer="91"/>
-<junction x="-5.08" y="114.3"/>
 <pinref part="STRT" gate="G$1" pin="1"/>
 <wire x1="-5.08" y1="114.3" x2="-5.08" y2="109.22" width="0.1524" layer="91"/>
 <label x="-5.08" y="109.22" size="1.27" layer="95" rot="R270" xref="yes"/>
@@ -3550,11 +3545,6 @@ This is the "EZ" version, which has limited top masking for improved ease of ass
 <pinref part="U$2" gate="G$1" pin="VCC"/>
 <wire x1="-53.34" y1="71.12" x2="-45.72" y2="71.12" width="0.1524" layer="91"/>
 <label x="-45.72" y="71.12" size="1.27" layer="95" xref="yes"/>
-</segment>
-<segment>
-<pinref part="R8" gate="G$1" pin="2"/>
-<wire x1="-20.32" y1="114.3" x2="-25.4" y2="114.3" width="0.1524" layer="91"/>
-<label x="-25.4" y="114.3" size="1.27" layer="95" rot="R180" xref="yes"/>
 </segment>
 <segment>
 <wire x1="-60.96" y1="114.3" x2="-58.42" y2="114.3" width="0.1524" layer="91"/>
