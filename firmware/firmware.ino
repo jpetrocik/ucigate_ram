@@ -30,6 +30,7 @@
 byte serialInput[100];
 int serialSize = 0;
 
+long nextStart = 0; //testing for continous run
 long nextTime = 0; //next time a cadence event is triggered
 long startTime = 0; //the time when the gate droppered. used by timer
 int cadenceStarted = false; //whether the cadence has started
@@ -73,14 +74,8 @@ void setup() {
   pinMode(SPEAKER, OUTPUT);
   digitalWrite(SPEAKER, LOW);
 
-  #ifdef RAM_GATE
+  //ensure ram is off
   digitalWrite(GATE, LOW);
-  #endif
-
-  #ifdef MAG_GATE
-  //turn on magnet
-  digitalWrite(GATE, HIGH);
-  #endif
 
   //performance light show to indicate box is on
   digitalWrite(LIGHT_RED, HIGH);
@@ -135,6 +130,17 @@ void version() {
   sendEvent("SW_VERSION",FIRMWARE_VERSION);
 }
 
+int continousBurnIn(int pin){
+
+  long currentTime = millis();
+  if (currentTime > nextStart) {
+    nextStart+=15000;
+    return HIGH;
+  }
+
+  return LOW;
+}
+  
 int checkButtonPress(int pin){
   long currentTime = millis();
   if ((currentTime - lastButtonRead) > DEBOUNCE_DELAY) {
@@ -162,9 +168,11 @@ void loop() {
    */
   if (buttonPushed) {
 
-    if (!cadenceStarted) {
+   if (cadenceStarted) {
+      cancelCadence();
+    } else if (gatePosition == GATE_POSITION_DOWN ) {
       raiseGate();
-      delay(8000);
+    } else if (gatePosition == GATE_POSITION_UP ) {
       startCadence();
     }
   }
@@ -177,16 +185,16 @@ void loop() {
     runCadence();
   }
   
-  /*
-   * Check Sensor Matt
-   */
-  if (timerStarted) {
-    int timerMat = analogRead(TIMER);
-    if ( timerMat > MAT_SENSOR_THRESHOLD ){
-      sendEvent("EVNT_TIMER_1", String(millis()-startTime));
-      timerStarted = false;
-    }
-  }
+//  /*
+//   * Check Sensor Matt
+//   */
+//  if (timerStarted) {
+//    int timerMat = analogRead(TIMER);
+//    if ( timerMat > MAT_SENSOR_THRESHOLD ){
+//      sendEvent("EVNT_TIMER_1", String(millis()-startTime));
+//      timerStarted = false;
+//    }
+//  }
 
 
 }
@@ -199,7 +207,7 @@ void runCadence() {
     
     if (cadenceState == STARTED) {
 
-      calibrateTimer();
+//      calibrateTimer();
 
       nextTime = currentTime + 50;
 
@@ -276,10 +284,6 @@ void runCadence() {
       //3 seconds after gate drops reset all lights
       resetLights();
       cadenceStarted = false;
-      #ifdef MAG_GATE
-        digitalWrite(GATE, HIGH);
-        gatePosition = GATE_POSITION_UP ;
-      #endif
     }
 
   }  
@@ -316,8 +320,8 @@ void startCadence() {
 }
 
 /**
- * For safety, the stop button can be pressed at any time (up to the end of the second
- * set of words) after the start button was pressed, to abort the sequence. 
+ * For safety, the stop button can only be pressed up to the end of the second
+ * voice cadence after to abort the sequence. 
  */
 void cancelCadence() {
   if (cadenceState ==  STARTED ||
@@ -364,7 +368,7 @@ void performCommand(String cmd, String args){
     }
   } 
   else if (cmd.equals("CALIBRATE")) {
-      gateCalibrate();
+//      gateCalibrate();
   } 
 }
 
@@ -433,60 +437,60 @@ void processSerialInput() {
   serialSize = 0;
 }
 
-void calibrateTimer(){
-  //Get base reading for timing matt
-  int reading = 0;
-  for (int i = 0; i<5; i++){
-    reading += analogRead(TIMER);
-    delay(20);
-  }
-  MAT_SENSOR_THRESHOLD = reading/5+300;
+//void calibrateTimer(){
+//  //Get base reading for timing matt
+//  int reading = 0;
+//  for (int i = 0; i<5; i++){
+//    reading += analogRead(TIMER);
+//    delay(20);
+//  }
+//  MAT_SENSOR_THRESHOLD = reading/5+300;
+//
+//}
 
-}
-
-void gateCalibrate() {
-  long startTime = 0;
-  long splitTime = 0;
-  
-  //make a bunch of noise
-  for (int i = 0; i<5; i++){
-    tone(SPEAKER, 1150, 500);
-    delay(750);
-  }
-
-  //raise the gate
-  digitalWrite(GATE, HIGH);
-
-  //loop
-  for (int i = 0; i<3; i++){
-    calibrateTimer();
-
-    //wait 5sec
-    delay(5000);
-    
-    //drop gate with warning
-    tone(SPEAKER, 1150, 500);
-    delay(2000);
-    startTime = millis();
-    digitalWrite(GATE, LOW);
-
-    //check time
-    int timerMat = analogRead(TIMER);
-    if ( timerMat > MAT_SENSOR_THRESHOLD ){
-      splitTime += millis() - startTime - 310;
-    }
-
-  }
-
-  byte gateDelay = splitTime/3;
-  if (gateDelay > 120)
-    gateDelay = 120;
-  if (gateDelay < 0 )
-    gateDelay = 0;
-
-  //set the new gateReleaseAdjustment number
-  gateReleaseAdjustment = gateDelay;
-
-}
+//void gateCalibrate() {
+//  long startTime = 0;
+//  long splitTime = 0;
+//  
+//  //make a bunch of noise
+//  for (int i = 0; i<5; i++){
+//    tone(SPEAKER, 1150, 500);
+//    delay(750);
+//  }
+//
+//  //raise the gate
+//  digitalWrite(GATE, HIGH);
+//
+//  //loop
+//  for (int i = 0; i<3; i++){
+//    //calibrateTimer();
+//
+//    //wait 5sec
+//    delay(5000);
+//    
+//    //drop gate with warning
+//    tone(SPEAKER, 1150, 500);
+//    delay(2000);
+//    startTime = millis();
+//    digitalWrite(GATE, LOW);
+//
+////    //check time
+////    int timerMat = analogRead(TIMER);
+////    if ( timerMat > MAT_SENSOR_THRESHOLD ){
+////      splitTime += millis() - startTime - 310;
+////    }
+//
+//  }
+//
+//  byte gateDelay = splitTime/3;
+//  if (gateDelay > 120)
+//    gateDelay = 120;
+//  if (gateDelay < 0 )
+//    gateDelay = 0;
+//
+//  //set the new gateReleaseAdjustment number
+//  gateReleaseAdjustment = gateDelay;
+//
+//}
 
 
