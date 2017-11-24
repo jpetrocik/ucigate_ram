@@ -31,19 +31,15 @@ byte serialInput[100];
 int serialSize = 0;
 
 long nextStart = 0; //testing for continous run
-long nextTime = 0; //next time a cadence event is triggered
+long nextEventTime = 0; //next time a cadence event is triggered
 long startTime = 0; //the time when the gate droppered. used by timer
 int cadenceStarted = false; //whether the cadence has started
-int timerStarted = false; //whether the timer has started
+int nextSplitTimer = -1; //whether the timer has started
+int timerStarted = 0;
 int gatePosition = GATE_POSITION_DOWN ; //the current position of the gate
 long lastButtonRead = 0;  //last time push button was read
 int cadenceState = 0; //the current state of the cadence
 int gateReleaseAdjustment = GATE_RELEASE_ADJUSTMENT; //the time to prerelease the gate
-
-/**
- * Recalibrated each start, used as a threadhold to indicate timer was triped
- */
-int MAT_SENSOR_THRESHOLD = 0;
 
 /**
  * Audio PWM player
@@ -69,6 +65,10 @@ void setup() {
   pinMode(LIGHT_YELLOW_2, OUTPUT);
   pinMode(LIGHT_GREEN, OUTPUT);
   pinMode(START, INPUT_PULLUP);
+  pinMode(TIMER_1, INPUT);
+  pinMode(TIMER_2, INPUT);
+  pinMode(TIMER_3, INPUT);
+  pinMode(TIMER_4, INPUT);
 
   //disable hum of speaker before first cadence
   pinMode(SPEAKER, OUTPUT);
@@ -141,7 +141,7 @@ int continousBurnIn(int pin){
   return LOW;
 }
   
-int checkButtonPress(int pin){
+int checkButton(int pin){
   long currentTime = millis();
   if ((currentTime - lastButtonRead) > DEBOUNCE_DELAY) {
     if (!digitalRead(pin)) {
@@ -161,20 +161,11 @@ void loop() {
   //process any serial commands
   processSerialInput();
 
-  int buttonPushed = checkButtonPress(START);
   
-  /**
-   * Take action on buttonPushed
-   */
-  if (buttonPushed) {
-
-   if (cadenceStarted) {
-      cancelCadence();
-    } else if (gatePosition == GATE_POSITION_DOWN ) {
-      raiseGate();
-    } else if (gatePosition == GATE_POSITION_UP ) {
-      startCadence();
-    }
+  //Take action when buttonPushed
+  int isPressed = checkButton(START);
+  if (isPressed) {
+    buttonPressed();
   }
 
 
@@ -185,31 +176,69 @@ void loop() {
     runCadence();
   }
   
-//  /*
-//   * Check Sensor Matt
-//   */
-//  if (timerStarted) {
-//    int timerMat = analogRead(TIMER);
-//    if ( timerMat > MAT_SENSOR_THRESHOLD ){
-//      sendEvent("EVNT_TIMER_1", String(millis()-startTime));
-//      timerStarted = false;
-//    }
-//  }
-
+  /*
+   * Check timers in sequence
+   */
+   if (timerStarted){
+    checkNextTimer();
+   }
 
 }
 
-void runCadence() {
+/*
+ * Called when the physical button is pressed
+ * or over bluetooth
+ */ 
+void buttonPressed() {
+     if (cadenceStarted) {
+      cancelCadence();
+    } else if (gatePosition == GATE_POSITION_DOWN ) {
+      raiseGate();
+    } else if (gatePosition == GATE_POSITION_UP ) {
+      startCadence();
+    }
+}
 
+void checkNextTimer() {
+  if (nextSplitTimer == TIMER_1) {
+    if (checkTimer(TIMER_1)) {
+      nextSplitTimer == TIMER_2;
+    }
+  } else if (nextSplitTimer == TIMER_2) {
+    if (checkTimer(TIMER_2)) {
+      nextSplitTimer == TIMER_3;
+    }
+  } else if (nextSplitTimer == TIMER_3) {
+    if (checkTimer(TIMER_3)) {
+      nextSplitTimer == TIMER_4;
+    }
+  } else if (nextSplitTimer == TIMER_4) {
+    if (checkTimer(TIMER_4)) {
+      nextSplitTimer == 0;
+    }
+  }  
+}
+
+long checkTimer(int whichTimer){
+    int timerStatus = digitalRead(whichTimer);
+    if ( timerStatus == HIGH  ){
+      long split = millis()-startTime;
+      sendEvent("EVNT_TIMER", String(split));
+      return split;
+    } 
+    return -1;
+}
+
+void runCadence() {
   long currentTime = millis();
 
-  if (currentTime > nextTime) {
+  //check whether the currentTime is passed the time
+  //when the next event will occur
+  if (currentTime > nextEventTime) {
     
     if (cadenceState == STARTED) {
 
-//      calibrateTimer();
-
-      nextTime = currentTime + 50;
+      nextEventTime = currentTime + 50;
 
       cadenceState = OK_RIDERS;
     } else if (cadenceState == OK_RIDERS) {
@@ -218,7 +247,7 @@ void runCadence() {
       sendEvent("EVNT_OK_RIDERS","");
       trmpcm.play(0,13224);
 
-      nextTime += 3300;
+      nextEventTime += 3300;
       
       cadenceState = RIDERS_READY;
     } else if (cadenceState == RIDERS_READY) {
@@ -227,7 +256,7 @@ void runCadence() {
       sendEvent("EVNT_RIDERS_READY","");
       trmpcm.play(32000,17535);
 
-      nextTime += 2110;
+      nextEventTime += 2110;
 
       cadenceState = RANDOM_PAUSE;
     } else if (cadenceState == RANDOM_PAUSE) {
@@ -235,7 +264,7 @@ void runCadence() {
 
       //Random delay .1 - 2.7 sec
       //offical delay of .1 was to fast, using .250
-      nextTime += random(550, 2700);
+      nextEventTime += random(550, 2700);
       cadenceState = RED_LIGHT;
       
     } else if (cadenceState == RED_LIGHT) {
@@ -243,7 +272,7 @@ void runCadence() {
       lightOn(LIGHT_RED, 60);
       sendEvent("EVNT_RED_LIGHT","");
 
-      nextTime += 120;
+      nextEventTime += 120;
 
       cadenceState = YELLOW1_LIGHT;
     } else if (cadenceState == YELLOW1_LIGHT) {
@@ -251,7 +280,7 @@ void runCadence() {
       lightOn(LIGHT_YELLOW_1,60);
       sendEvent("EVNT_YELLOW_1_LIGHT","");
 
-      nextTime += 120;
+      nextEventTime += 120;
 
       cadenceState = YELLOW2_LIGHT;
     } else if (cadenceState == YELLOW2_LIGHT) {
@@ -259,7 +288,7 @@ void runCadence() {
       lightOn(LIGHT_YELLOW_2,60);
       sendEvent("EVNT_YELLOW_2_LIGHT","");
 
-      nextTime += (120 - gateReleaseAdjustment);
+      nextEventTime += (120 - gateReleaseAdjustment);
  
       cadenceState = DROP_GATE;
     } else if (cadenceState == DROP_GATE) {
@@ -267,17 +296,18 @@ void runCadence() {
       digitalWrite(GATE, LOW);
       gatePosition = GATE_POSITION_DOWN ;
 
-      nextTime += gateReleaseAdjustment;
+      nextEventTime += gateReleaseAdjustment;
 
       cadenceState = GREEN_LIGHT;
     } else if (cadenceState == GREEN_LIGHT) {
       //Green light
       lightOn(LIGHT_GREEN, 2250);
       startTime = millis();
+      nextSplitTimer = TIMER_1;
       timerStarted = true;
       sendEvent("EVNT_GREEN_LIGHT","");
 
-      nextTime += 3000;
+      nextEventTime += 3000;
 
       cadenceState = GATE_RESET;
     } else if (cadenceState == GATE_RESET ) {
@@ -306,6 +336,7 @@ void raiseGate() {
 
   digitalWrite(GATE, HIGH);
   gatePosition = GATE_POSITION_UP;
+  timerStarted = false;
 }
 
 void lightOn(int light, int msec){
@@ -364,7 +395,7 @@ void performCommand(String cmd, String args){
   } 
   else if (cmd.equals("START_CADENCE")) {
     if (cadenceStarted == false){
-      startCadence();
+      buttonPressed();
     }
   } 
   else if (cmd.equals("CALIBRATE")) {
@@ -437,60 +468,5 @@ void processSerialInput() {
   serialSize = 0;
 }
 
-//void calibrateTimer(){
-//  //Get base reading for timing matt
-//  int reading = 0;
-//  for (int i = 0; i<5; i++){
-//    reading += analogRead(TIMER);
-//    delay(20);
-//  }
-//  MAT_SENSOR_THRESHOLD = reading/5+300;
-//
-//}
-
-//void gateCalibrate() {
-//  long startTime = 0;
-//  long splitTime = 0;
-//  
-//  //make a bunch of noise
-//  for (int i = 0; i<5; i++){
-//    tone(SPEAKER, 1150, 500);
-//    delay(750);
-//  }
-//
-//  //raise the gate
-//  digitalWrite(GATE, HIGH);
-//
-//  //loop
-//  for (int i = 0; i<3; i++){
-//    //calibrateTimer();
-//
-//    //wait 5sec
-//    delay(5000);
-//    
-//    //drop gate with warning
-//    tone(SPEAKER, 1150, 500);
-//    delay(2000);
-//    startTime = millis();
-//    digitalWrite(GATE, LOW);
-//
-////    //check time
-////    int timerMat = analogRead(TIMER);
-////    if ( timerMat > MAT_SENSOR_THRESHOLD ){
-////      splitTime += millis() - startTime - 310;
-////    }
-//
-//  }
-//
-//  byte gateDelay = splitTime/3;
-//  if (gateDelay > 120)
-//    gateDelay = 120;
-//  if (gateDelay < 0 )
-//    gateDelay = 0;
-//
-//  //set the new gateReleaseAdjustment number
-//  gateReleaseAdjustment = gateDelay;
-//
-//}
 
 

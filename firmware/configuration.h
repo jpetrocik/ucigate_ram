@@ -10,7 +10,7 @@
 /**
  * Firmware Version number
  */
-#define FIRMWARE_VERSION "2.0.0"
+#define FIRMWARE_VERSION "4.2.0-RAM"
 
 /**
  * The time in millis before green 0-120 are valid
@@ -27,6 +27,8 @@
   #define START 7
   #define TIMER_1 23
   #define TIMER_2 24
+  #define TIMER_3 25
+  #define TIMER_4 26
 #endif
 
 #ifdef BOARD_V3_X_WHITTIER 
