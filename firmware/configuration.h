@@ -1,4 +1,4 @@
-#define BOARD_V4_X
+#define BOARD_V4_2
 
 /**
  * A very long debounce delay, so if the user accidentally
@@ -17,7 +17,7 @@
  */
 #define GATE_RELEASE_ADJUSTMENT 70
 
-#ifdef BOARD_V4_X
+#if defined (BOARD_V4_1)  || !defined (BOARD_V4_2) 
   #define GATE 6
   #define LIGHT_RED 5
   #define LIGHT_YELLOW_1 4

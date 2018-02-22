@@ -30,12 +30,11 @@
 byte serialInput[100];
 int serialSize = 0;
 
-long nextStart = 0; //testing for continous run
 long nextEventTime = 0; //next time a cadence event is triggered
 long startTime = 0; //the time when the gate droppered. used by timer
 int cadenceStarted = false; //whether the cadence has started
 int nextSplitTimer = -1; //whether the timer has started
-int timerStarted = 0;
+boolean timerStarted = false;
 int gatePosition = GATE_POSITION_DOWN ; //the current position of the gate
 long lastButtonRead = 0;  //last time push button was read
 int cadenceState = 0; //the current state of the cadence
@@ -75,7 +74,7 @@ void setup() {
   digitalWrite(SPEAKER, LOW);
 
   //ensure ram is off
-  digitalWrite(GATE, LOW);
+  digitalWrite(GATE, HIGH);
 
   //performance light show to indicate box is on
   digitalWrite(LIGHT_RED, HIGH);
@@ -130,17 +129,6 @@ void version() {
   sendEvent("SW_VERSION",FIRMWARE_VERSION);
 }
 
-int continousBurnIn(int pin){
-
-  long currentTime = millis();
-  if (currentTime > nextStart) {
-    nextStart+=15000;
-    return HIGH;
-  }
-
-  return LOW;
-}
-  
 int checkButton(int pin){
   long currentTime = millis();
   if ((currentTime - lastButtonRead) > DEBOUNCE_DELAY) {
@@ -160,7 +148,6 @@ void loop() {
 
   //process any serial commands
   processSerialInput();
-
   
   //Take action when buttonPushed
   int isPressed = checkButton(START);
@@ -169,19 +156,15 @@ void loop() {
   }
 
 
-  /**
-   * If candence is running process events
-   */
+  //If candence is running process events
   if (cadenceStarted) {
     runCadence();
   }
   
-  /*
-   * Check timers in sequence
-   */
-   if (timerStarted){
-    checkNextTimer();
-   }
+  //Check timers in sequence
+  if (timerStarted){
+   checkNextTimer();
+  }
 
 }
 
@@ -190,7 +173,7 @@ void loop() {
  * or over bluetooth
  */ 
 void buttonPressed() {
-     if (cadenceStarted) {
+    if (cadenceStarted) {
       cancelCadence();
     } else if (gatePosition == GATE_POSITION_DOWN ) {
       raiseGate();
@@ -219,14 +202,14 @@ void checkNextTimer() {
   }  
 }
 
-long checkTimer(int whichTimer){
+boolean checkTimer(int whichTimer){
     int timerStatus = digitalRead(whichTimer);
     if ( timerStatus == HIGH  ){
       long split = millis()-startTime;
       sendEvent("EVNT_TIMER", String(split));
-      return split;
+      return true;
     } 
-    return -1;
+    return false;
 }
 
 void runCadence() {
@@ -293,7 +276,7 @@ void runCadence() {
       cadenceState = DROP_GATE;
     } else if (cadenceState == DROP_GATE) {
       //drop gate
-      digitalWrite(GATE, LOW);
+      digitalWrite(GATE, HIGH);
       gatePosition = GATE_POSITION_DOWN ;
 
       nextEventTime += gateReleaseAdjustment;
@@ -334,7 +317,7 @@ void raiseGate() {
     delay(500);
   }
 
-  digitalWrite(GATE, HIGH);
+  digitalWrite(GATE, LOW);
   gatePosition = GATE_POSITION_UP;
   timerStarted = false;
 }
