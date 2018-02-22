@@ -21,7 +21,7 @@
 #define YELLOW2_LIGHT 7
 #define DROP_GATE 8
 #define GREEN_LIGHT 9
-#define GATE_RESET 10
+#define LIGHT_RESET 10
  
 
 /**
@@ -30,15 +30,14 @@
 byte serialInput[100];
 int serialSize = 0;
 
-long nextEventTime = 0; //next time a cadence event is triggered
-long startTime = 0; //the time when the gate droppered. used by timer
+long nextCadenceEventTime = 0; //next time a cadence event is triggered
+long gateDropTime = 0; //the time when the gate droppered, used by timer
 int cadenceStarted = false; //whether the cadence has started
-int nextSplitTimer = -1; //whether the timer has started
+int nextSplitTimer = -1; //which timer to read next
 boolean timerStarted = false;
 int gatePosition = GATE_POSITION_DOWN ; //the current position of the gate
-long lastButtonRead = 0;  //last time push button was read
+long lastButtonRead = 0;  //last time push button was read to debounce button read
 int cadenceState = 0; //the current state of the cadence
-int gateReleaseAdjustment = GATE_RELEASE_ADJUSTMENT; //the time to prerelease the gate
 
 /**
  * Audio PWM player
@@ -78,13 +77,13 @@ void setup() {
 
   //performance light show to indicate box is on
   digitalWrite(LIGHT_RED, HIGH);
-  delay(250);
+  delay(500);
   digitalWrite(LIGHT_YELLOW_1, HIGH);
-  delay(250);
+  delay(500);
   digitalWrite(LIGHT_YELLOW_2, HIGH);
-  delay(250);
+  delay(500);
   digitalWrite(LIGHT_GREEN, HIGH);
-  delay(250);
+  delay(500);
   for (int i = 0;i<5;i++){
     digitalWrite(LIGHT_RED, HIGH);  
     digitalWrite(LIGHT_YELLOW_1, HIGH);
@@ -185,19 +184,19 @@ void buttonPressed() {
 void checkNextTimer() {
   if (nextSplitTimer == TIMER_1) {
     if (checkTimer(TIMER_1)) {
-      nextSplitTimer == TIMER_2;
+      nextSplitTimer = TIMER_2;
     }
   } else if (nextSplitTimer == TIMER_2) {
     if (checkTimer(TIMER_2)) {
-      nextSplitTimer == TIMER_3;
+      nextSplitTimer = TIMER_3;
     }
   } else if (nextSplitTimer == TIMER_3) {
     if (checkTimer(TIMER_3)) {
-      nextSplitTimer == TIMER_4;
+      nextSplitTimer = TIMER_4;
     }
   } else if (nextSplitTimer == TIMER_4) {
     if (checkTimer(TIMER_4)) {
-      nextSplitTimer == 0;
+      nextSplitTimer = 0;
     }
   }  
 }
@@ -205,7 +204,7 @@ void checkNextTimer() {
 boolean checkTimer(int whichTimer){
     int timerStatus = digitalRead(whichTimer);
     if ( timerStatus == HIGH  ){
-      long split = millis()-startTime;
+      long split = millis()-gateDropTime;
       sendEvent("EVNT_TIMER", String(split));
       return true;
     } 
@@ -217,11 +216,11 @@ void runCadence() {
 
   //check whether the currentTime is passed the time
   //when the next event will occur
-  if (currentTime > nextEventTime) {
+  if (currentTime > nextCadenceEventTime) {
     
     if (cadenceState == STARTED) {
 
-      nextEventTime = currentTime + 50;
+      nextCadenceEventTime = currentTime + 50;
 
       cadenceState = OK_RIDERS;
     } else if (cadenceState == OK_RIDERS) {
@@ -230,7 +229,7 @@ void runCadence() {
       sendEvent("EVNT_OK_RIDERS","");
       trmpcm.play(0,13224);
 
-      nextEventTime += 3300;
+      nextCadenceEventTime += 3300;
       
       cadenceState = RIDERS_READY;
     } else if (cadenceState == RIDERS_READY) {
@@ -239,7 +238,7 @@ void runCadence() {
       sendEvent("EVNT_RIDERS_READY","");
       trmpcm.play(32000,17535);
 
-      nextEventTime += 2110;
+      nextCadenceEventTime += 2110;
 
       cadenceState = RANDOM_PAUSE;
     } else if (cadenceState == RANDOM_PAUSE) {
@@ -247,7 +246,7 @@ void runCadence() {
 
       //Random delay .1 - 2.7 sec
       //offical delay of .1 was to fast, using .250
-      nextEventTime += random(550, 2700);
+      nextCadenceEventTime += random(550, 2700);
       cadenceState = RED_LIGHT;
       
     } else if (cadenceState == RED_LIGHT) {
@@ -255,7 +254,7 @@ void runCadence() {
       lightOn(LIGHT_RED, 60);
       sendEvent("EVNT_RED_LIGHT","");
 
-      nextEventTime += 120;
+      nextCadenceEventTime += 120;
 
       cadenceState = YELLOW1_LIGHT;
     } else if (cadenceState == YELLOW1_LIGHT) {
@@ -263,7 +262,7 @@ void runCadence() {
       lightOn(LIGHT_YELLOW_1,60);
       sendEvent("EVNT_YELLOW_1_LIGHT","");
 
-      nextEventTime += 120;
+      nextCadenceEventTime += 120;
 
       cadenceState = YELLOW2_LIGHT;
     } else if (cadenceState == YELLOW2_LIGHT) {
@@ -271,7 +270,7 @@ void runCadence() {
       lightOn(LIGHT_YELLOW_2,60);
       sendEvent("EVNT_YELLOW_2_LIGHT","");
 
-      nextEventTime += (120 - gateReleaseAdjustment);
+      nextCadenceEventTime += (120 - GATE_RELEASE_ADJUSTMENT);
  
       cadenceState = DROP_GATE;
     } else if (cadenceState == DROP_GATE) {
@@ -279,21 +278,21 @@ void runCadence() {
       digitalWrite(GATE, HIGH);
       gatePosition = GATE_POSITION_DOWN ;
 
-      nextEventTime += gateReleaseAdjustment;
+      nextCadenceEventTime += GATE_RELEASE_ADJUSTMENT;
 
       cadenceState = GREEN_LIGHT;
     } else if (cadenceState == GREEN_LIGHT) {
       //Green light
       lightOn(LIGHT_GREEN, 2250);
-      startTime = millis();
+      gateDropTime = millis();
       nextSplitTimer = TIMER_1;
       timerStarted = true;
       sendEvent("EVNT_GREEN_LIGHT","");
 
-      nextEventTime += 3000;
+      nextCadenceEventTime += 3000;
 
-      cadenceState = GATE_RESET;
-    } else if (cadenceState == GATE_RESET ) {
+      cadenceState = LIGHT_RESET;
+    } else if (cadenceState == LIGHT_RESET ) {
       //3 seconds after gate drops reset all lights
       resetLights();
       cadenceStarted = false;
