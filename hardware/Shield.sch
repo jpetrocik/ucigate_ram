@@ -5211,7 +5211,7 @@ Source: RS Component / Phycomp</description>
 <part name="Y1" library="SparkFun-FreqCtrl" deviceset="CRYSTAL" device="HC49US" value="16Mhz"/>
 <part name="C1" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="22pf"/>
 <part name="C2" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="22pf"/>
-<part name="C3" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="0.1uf"/>
+<part name="C3" library="SparkFun-Capacitors" deviceset="CAP" device="1206" value="10uf"/>
 <part name="GND3" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="GND5" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
 <part name="GND6" library="SparkFun-Aesthetics" deviceset="GND" device=""/>
