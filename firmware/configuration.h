@@ -10,7 +10,7 @@
 /**
  * Firmware Version number
  */
-#define FIRMWARE_VERSION "4.2.0-RAM"
+#define FIRMWARE_VERSION "4.3.0-RAM"
 
 /**
  * The time in millis before green 0-120 are valid
@@ -19,9 +19,9 @@
 
 #if defined (BOARD_V4_1)  || defined (BOARD_V4_2) || defined (BOARD_V4_3) 
   #define GATE 6
-  #define LIGHT_RED 5
+  #define LIGHT_RED 3
   #define LIGHT_YELLOW_1 4
-  #define LIGHT_YELLOW_2 3
+  #define LIGHT_YELLOW_2 5
   #define LIGHT_GREEN 2
   #define SPEAKER 9
   #define START 7
@@ -58,5 +58,3 @@
  * Changable for boards where UART is a SerialX
  */
 #define SerialPort Serial
-
-
